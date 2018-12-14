@@ -1,0 +1,7 @@
+ManifestFileVersion: 0
+CRC: 591074200
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: match01.unity3d
+      Dependencies: {}

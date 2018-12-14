@@ -1,0 +1,4 @@
+sceneSetups:
+- path: C:/Work/HOGE/Assets/App/Scenes/Boot.unity
+  isLoaded: 1
+  isActive: 1

@@ -1,0 +1,16 @@
+ManifestFileVersion: 0
+CRC: 950814990
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: ba437cb87fe7d8ced4050b84e57b0035
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: c73412a662fd4e4f36af34cbdf078b85
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+Assets:
+- Assets/Asset/match01.png
+Dependencies: []
