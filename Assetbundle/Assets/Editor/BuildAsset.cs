@@ -10,27 +10,26 @@ using YamlDotNet.Serialization;
 
 public class ResourceVersion
 {
-	[System.Serializable]
 	public class FileVersion
 	{
-		public string path = "";
-		public string crc = "";
+		public string Path { get; set; } = "";
+		public string Hash { get; set; } = "";
 	}
 
-	public List<FileVersion> versionList = new List<FileVersion>();
+	public List<FileVersion> VersionList { get; private set; } = new List<FileVersion>();
 }
 
 public class BuildAssetbundle : MonoBehaviour
 {
-	private const string outputDir 				= "Output";
-	private const string assetDir 				= "Asset";
-	private const string assetPackList 			= "AssetPack";
-	private const string assetPackPrefix 		= "Pack_";
-	private const string assetbundleExt			= ".unity3d";
-	private const string assetbundleManifestExt = ".manifest";
-	private const string versionListFileName 	= "version.txt";
+	private const string _outputDir              = "Output";
+	private const string _assetDir               = "Asset";
+	private const string _assetPackList          = "AssetPack";
+	private const string _assetPackPrefix        = "Pack_";
+	private const string _assetbundleExt         = ".unity3d";
+	private const string _assetbundleManifestExt = ".manifest";
+	private const string _versionListFileName    = "version.txt";
 
-	private static BuildAssetBundleOptions buildOption = 
+	private static BuildAssetBundleOptions buildOption =
 		BuildAssetBundleOptions.ChunkBasedCompression
 		//		| BuildAssetBundleOptions.ForceRebuildAssetBundle
 		| BuildAssetBundleOptions.StrictMode
@@ -38,63 +37,72 @@ public class BuildAssetbundle : MonoBehaviour
 
 	class Asset
 	{
-		public string FileName { get; set; }
-		public string FileDir { get; set; }
-		public string ExportName { get; set; }
-	}
+		public string FileName { get; set; } = string.Empty;
+		public string FileDir { get; set; } = string.Empty;
+		public string ExportName { get; set; } = string.Empty;
 
+		public string Hash { get; set; } = string.Empty;
+	}
+	
 	class AssetPack
 	{
-		public List<string> FilePathList = new List<string> ();
-		public string FilePackDir { get; set; }
-		public string ExportName { get; set; }
+		public List<string> FilePathList { get; set; } = new List<string>();
+		public string FilePackDir { get; set; } = string.Empty;
+		public string ExportName { get; set; } = string.Empty;
+
+		public string Hash { get; set; } = string.Empty;
 	}
 
 	enum BuildType
 	{
-		All 		= 0,
-
-		iOS 		= 1,
+		Start = 0,
+		
+		iOS = Start,
 		Android,
 		Windows,
-	}
 
+		End = Windows,
+	}
+	
 	[MenuItem("Asset/Build AssetBundles(All)")]
 	static void BuildAll()
 	{
-		var fileList = GetAssetList();
-//		BuildAsset (BuildType.All, fileList);
+		Dictionary<BuildType, List<AssetBundleManifest>> manifestList = new Dictionary<BuildType, List<AssetBundleManifest>>();
+		
+		for (int i = (int)BuildType.Start; i < (int)BuildType.End; i++) {
+			
+			var fileList = GetAssetList();
+			BuildAsset((BuildType)i, fileList);
 
-		var filePackList = GetAssetPackList();
-//		BuildAssetPack (BuildType.All, filePackList);
+			var filePackList = GetAssetPackList();
+			BuildAssetPack((BuildType)i, filePackList);
 
-		CreateAssetbundleVersionFile(BuildType.iOS);
-		CreateAssetbundleVersionFile(BuildType.Android);
-		CreateAssetbundleVersionFile(BuildType.Windows);
+			CreateAssetbundleVersionFile(BuildType.iOS, fileList, filePackList);
+		}
 	}
 
 	[MenuItem("Asset/Build AssetBundles(iOS Only)")]
 	static void BuildForiOS()
 	{
 		var fileList = GetAssetList();
-		BuildAsset (BuildType.iOS, fileList);
+		BuildAsset(BuildType.iOS, fileList);
 
 		var filePackList = GetAssetPackList();
-		BuildAssetPack (BuildType.iOS, filePackList);
+		BuildAssetPack(BuildType.iOS, filePackList);
 
-		CreateAssetbundleVersionFile(BuildType.iOS);
+		CreateAssetbundleVersionFile(BuildType.iOS, fileList, filePackList);
 	}
 
 	[MenuItem("Asset/Build AssetBundles(Android Only)")]
 	static void BuildForAndroid()
 	{
 		var fileList = GetAssetList();
-		BuildAsset (BuildType.Android, fileList);
+		BuildAsset(BuildType.Android, fileList);
 
 		var filePackList = GetAssetPackList();
-		BuildAssetPack (BuildType.Android, filePackList);
+		BuildAssetPack(BuildType.Android, filePackList);
 
-		CreateAssetbundleVersionFile(BuildType.Android);
+		CreateAssetbundleVersionFile(BuildType.Android, fileList, filePackList);
 	}
 
 	[MenuItem("Asset/Build AssetBundles(Windows Only)")]
@@ -102,49 +110,44 @@ public class BuildAssetbundle : MonoBehaviour
 	{
 		var fileList = GetAssetList();
 		BuildAsset (BuildType.Windows, fileList);
-
+		
 		var filePackList = GetAssetPackList();
-		BuildAssetPack (BuildType.Windows, filePackList);
+		BuildAssetPack(BuildType.Windows, filePackList);
 
-		CreateAssetbundleVersionFile(BuildType.Windows);
+		CreateAssetbundleVersionFile(BuildType.Windows, fileList, filePackList);
 	}
-
+	
 	private static bool BuildAsset(BuildType buildType, Dictionary<string, List<Asset>> assetList)
 	{
-		// 
 		foreach (var key in assetList.Keys) {
 
-			CreateOutputDirectory(BuildType.Android, key);
-			CreateOutputDirectory(BuildType.iOS, key);
-			CreateOutputDirectory(BuildType.Windows, key);
+			CreateOutputDirectory(buildType, key);
 
 			List<AssetBundleBuild> buildAssetList = new List<AssetBundleBuild>();
-			foreach (var o in assetList[key]) {
-				string filePath = "Assets/" + o.FileDir + "/" + o.FileName;
-				AssetBundleBuild buildAsset = new AssetBundleBuild();
-				buildAsset.assetBundleName = o.ExportName;
-				buildAsset.assetNames = new string[] {filePath};
-				buildAssetList.Add (buildAsset);
-			}
+			var asset = assetList[key][0];
+			string filePath = "Assets/" + asset.FileDir + "/" + asset.FileName;
+			AssetBundleBuild buildAsset = new AssetBundleBuild();
+			buildAsset.assetBundleName = asset.ExportName;
+			buildAsset.assetNames = new string[] { filePath };
+			buildAssetList.Add(buildAsset);
 
 			if (buildAssetList.Count == 0) {
-				Debug.LogWarning ("Why is folder empty???");
+				Debug.LogWarning("Why is folder empty???");
 				continue;
 			}
-
+			
 			string iosOutputDir = GetOutputDir(BuildType.iOS, key);
 			string androidOutputDir = GetOutputDir(BuildType.Android, key);
 			string windowsOutputDir = GetOutputDir(BuildType.Windows, key);
 			if (buildType == BuildType.iOS) {
-				BuildPipeline.BuildAssetBundles (iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
+				var manifest = BuildPipeline.BuildAssetBundles(iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
+				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
 			} else if (buildType == BuildType.Android) {
-				BuildPipeline.BuildAssetBundles (androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
+				var manifest = BuildPipeline.BuildAssetBundles(androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
+				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
 			} else if (buildType == BuildType.Windows) {
-				BuildPipeline.BuildAssetBundles (windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
-			} else if (buildType == BuildType.All) {
-				BuildPipeline.BuildAssetBundles (iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
-				BuildPipeline.BuildAssetBundles (androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
-				BuildPipeline.BuildAssetBundles (windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
+				var manifest = BuildPipeline.BuildAssetBundles(windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
+				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
 			}
 		}
 
@@ -155,85 +158,75 @@ public class BuildAssetbundle : MonoBehaviour
 	{
 		foreach (var key in assetList.Keys) {
 
-			CreateOutputDirectory(BuildType.Android, key);
-			CreateOutputDirectory(BuildType.iOS, key);
-			CreateOutputDirectory(BuildType.Windows, key);
+			CreateOutputDirectory(buildType, key);
 
 			List<AssetBundleBuild> buildAssetList = new List<AssetBundleBuild>();
-			foreach (var o in assetList[key]) {
-				AssetBundleBuild buildAsset = new AssetBundleBuild();
-				buildAsset.assetBundleName = o.ExportName;
-				buildAsset.assetNames = o.FilePathList.ToArray();
-				buildAssetList.Add (buildAsset);
-			}
+			var asset = assetList[key][0];
+			AssetBundleBuild buildAsset = new AssetBundleBuild();
+			buildAsset.assetBundleName = asset.ExportName;
+			buildAsset.assetNames = asset.FilePathList.ToArray();
+			buildAssetList.Add(buildAsset);
 
 			if (buildAssetList.Count == 0) {
-				Debug.LogWarning ("Why is folder empty???");
+				Debug.LogWarning("Why is folder empty???");
 				continue;
 			}
-
+			
 			string iosOutputDir = GetOutputDir(BuildType.iOS, key);
 			string androidOutputDir = GetOutputDir(BuildType.Android, key);
 			string windowsOutputDir = GetOutputDir(BuildType.Windows, key);
 			if (buildType == BuildType.iOS) {
-				BuildPipeline.BuildAssetBundles (iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
+				var manifest = BuildPipeline.BuildAssetBundles(iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
+				var hash = manifest.GetAssetBundleHash(asset.ExportName);
+				asset.Hash = hash.ToString();
+				
 			} else if (buildType == BuildType.Android) {
-				BuildPipeline.BuildAssetBundles (androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
+				var manifest = BuildPipeline.BuildAssetBundles(androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
+				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
+
 			} else if (buildType == BuildType.Windows) {
-				BuildPipeline.BuildAssetBundles (windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
-			} else if (buildType == BuildType.All) {
-				BuildPipeline.BuildAssetBundles (iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
-				BuildPipeline.BuildAssetBundles (androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
-				BuildPipeline.BuildAssetBundles (windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
+				var manifest = BuildPipeline.BuildAssetBundles(windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
+				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
+
 			}
 		}
-
+		
 		return true;
 	}
 
 	/// <summary>
 	/// create: resource version file
 	/// </summary>
-	private static void CreateAssetbundleVersionFile(BuildType buildType)
+	private static void CreateAssetbundleVersionFile(BuildType buildType, Dictionary<string, List<Asset>> assetList, Dictionary<string, List<AssetPack>> assetPackList)
 	{
 		string outputForDir = GetOutputDir(buildType, "");
-		string [] fileList = Directory.GetFiles(outputForDir, "*" + assetbundleManifestExt, System.IO.SearchOption.AllDirectories);
-		StreamWriter yamlWriter = new StreamWriter (Path.Combine(outputForDir, versionListFileName));
-		ResourceVersion resourceVersion = new ResourceVersion ();
 
-		foreach (var file in fileList) {
+		StreamWriter yamlWriter = new StreamWriter(Path.Combine(outputForDir, _versionListFileName));
+		ResourceVersion resourceVersion = new ResourceVersion();
 
-			// load assetbundle.manifest (yaml format)
-			string fullPath = Application.dataPath + "/../" + file;
-			StreamReader reader = new StreamReader (fullPath);
-			string content = reader.ReadToEnd ();
-			var stringReader = new StringReader(content);
-			reader.Close();
+		foreach (var list in assetList) {
 
-			var yaml = new YamlStream();
-			yaml.Load(stringReader);
-
-			// Examine the stream
-			var rootNode = (YamlMappingNode)yaml.Documents[0].RootNode;
-			var crcNode = rootNode.Children [new YamlScalarNode ("CRC")];
-			string assetbundle = file.Replace (assetbundleManifestExt, "");
-			if (assetbundle.Contains(assetbundleExt) && File.Exists (assetbundle)) {
-				assetbundle = assetbundle.Replace (outputForDir, "");
-				ResourceVersion.FileVersion fileVersion = new ResourceVersion.FileVersion();
-				fileVersion.path = assetbundle;
-				fileVersion.crc = ((YamlScalarNode)crcNode).Value;
-				resourceVersion.versionList.Add (fileVersion);
-			}
+			var asset = list.Value[0];
+			ResourceVersion.FileVersion fileVersion = new ResourceVersion.FileVersion();
+			fileVersion.Path = list.Key + "/" + asset.ExportName;
+			fileVersion.Hash = asset.Hash;
+			resourceVersion.VersionList.Add(fileVersion);
 		}
 
-		YamlDotNet.Serialization.Serializer yamlSerializer = new YamlDotNet.Serialization.Serializer();
-		string yamlStr = yamlSerializer.Serialize (resourceVersion);
-		yamlWriter.Write(yamlStr);
-		Debug.Log (yamlStr);
-		string jsonStr = JsonUtility.ToJson(resourceVersion);
-		Debug.Log (jsonStr);
-//		yamlWriter.Write (jsonStr);
+		foreach (var list in assetPackList) {
 
+			var asset = list.Value[0];
+			ResourceVersion.FileVersion fileVersion = new ResourceVersion.FileVersion();
+			fileVersion.Path = list.Key + "/" + asset.ExportName;
+			fileVersion.Hash = asset.Hash;
+			resourceVersion.VersionList.Add(fileVersion);
+		}
+		
+		YamlDotNet.Serialization.Serializer yamlSerializer = new YamlDotNet.Serialization.Serializer();
+		string yamlStr = yamlSerializer.Serialize(resourceVersion);
+		Debug.Log(yamlStr);
+		
+		yamlWriter.Write(yamlStr);
 		yamlWriter.Close ();
 	}
 
@@ -242,60 +235,60 @@ public class BuildAssetbundle : MonoBehaviour
 		return Application.dataPath;
 	}
 
-	/// <summary>
-	/// output: dir
-	/// </summary>
+	///	<summary>
+	///	output:	dir
+	///	</summary>
 	private static string GetOutputDir(BuildType buildType, string subDir)
 	{
 		switch (buildType) 
 		{
 		case BuildType.Android:
-			return Path.Combine(outputDir, "Android") + "/" + subDir;
-		case BuildType.iOS: 
-			return Path.Combine(outputDir, "iOS") + "/" + subDir;
+			return Path.Combine(_outputDir, "Android") + "\\" + subDir;
+		case BuildType.iOS:
+			return Path.Combine(_outputDir, "iOS") + "\\" + subDir;
 		default:
-			return Path.Combine(outputDir, "Windows") + "/" + subDir;
+			return Path.Combine(_outputDir, "Windows") + "\\" + subDir;
 		}
 	}
 
 	private static void CreateOutputDirectory(BuildType buildType, string subDir)
 	{
 		// create output root dir
-		if (!Directory.Exists (outputDir)) {
-			Directory.CreateDirectory (outputDir);
+		if (!Directory.Exists(_outputDir)) {
+			Directory.CreateDirectory(_outputDir);
 		}
-
-		// create output root dir 
-		string androidDir = GetOutputDir (buildType, "");
-		if (!Directory.Exists (androidDir)) {
-			Directory.CreateDirectory (androidDir);
+		
+		// create output root dir
+		string androidDir = GetOutputDir(buildType, "");
+		if (!Directory.Exists(androidDir)) {
+			Directory.CreateDirectory(androidDir);
 		}
 
 		// create output sub dirs
-		string [] dirList = subDir.Split ('/');
+		string[] dirList = subDir.Split('/');
 		string curDir = androidDir;
 		foreach (var d in dirList) {
 			curDir = Path.Combine(curDir, d);
-			if (!Directory.Exists (curDir)) {
-				Directory.CreateDirectory (curDir);
+			if (!Directory.Exists(curDir)) {
+				Directory.CreateDirectory(curDir);
 			}
 		}
 	}
 
 	/// <summary>
-	/// seach: single asset
-	/// </summary>
+	///	seach: single asset
+	///	</summary>
 	private static Dictionary<string, List<Asset>> GetAssetList()
 	{
-		List<Asset> list = SearchAsset(assetDir);
+		List<Asset> list = SearchAsset(_assetDir);
 		Dictionary<string, List<Asset>> retList = new Dictionary<string, List<Asset>>();
 
 		foreach (var o in list) {
 			if (retList.ContainsKey(o.FileDir)) {
-				retList [o.FileDir].Add(o);
+				retList[o.FileDir].Add(o);
 			} else {
-				retList [o.FileDir] = new List<Asset>();
-				retList [o.FileDir].Add(o);
+				retList[o.FileDir] = new List<Asset>();
+				retList[o.FileDir].Add(o);
 			}
 		}
 		return retList;
@@ -304,16 +297,16 @@ public class BuildAssetbundle : MonoBehaviour
 	private static List<Asset> SearchAsset(string currentDir)
 	{
 		List<Asset> retList = new List<Asset>();
-		List<Asset> rootFileList = GetAssetFileList (currentDir);
+		List<Asset> rootFileList = GetAssetFileList(currentDir);
 		retList.AddRange(rootFileList);
-
+		
 		// sub sirectory search
 		string findDir = GetAssetbundleRootPath() + "/" + currentDir;
-		string [] dirList = Directory.GetDirectories(findDir, "*", System.IO.SearchOption.TopDirectoryOnly);
+		string[] dirList = Directory.GetDirectories(findDir, "*", System.IO.SearchOption.TopDirectoryOnly);
 		foreach (var dirPath in dirList) {
 			FileInfo fileInfo = new FileInfo(dirPath);
 			string subDirectory = currentDir + "/" + fileInfo.Name;
-			List<Asset> subDirList = SearchAsset (subDirectory);
+			List<Asset> subDirList = SearchAsset(subDirectory);
 			retList.AddRange(subDirList);
 		}
 		return retList;
@@ -323,59 +316,60 @@ public class BuildAssetbundle : MonoBehaviour
 	{
 		List<Asset> assetList = new List<Asset>();
 
-		string findDir = GetAssetbundleRootPath () + "/" + dirPath;
-		string [] fileList = Directory.GetFiles (findDir);
+		string findDir = GetAssetbundleRootPath() + "/" + dirPath;
+		string[] fileList = Directory.GetFiles(findDir);
 		foreach (var file in fileList) {
-			if (System.IO.Path.GetExtension (file) == ".meta")
+			if (System.IO.Path.GetExtension(file) == ".meta")
 				continue;
-			
+
 			Asset asset = new Asset();
 			asset.FileDir = dirPath;
 			asset.FileName = new FileInfo(file).Name;
-			asset.ExportName = Path.GetFileNameWithoutExtension (asset.FileName) + assetbundleExt;
+			asset.ExportName = Path.GetFileNameWithoutExtension (asset.FileName) + _assetbundleExt;
 			assetList.Add (asset);
 		}
 		return assetList;
 	}
 
 	/// <summary>
-	/// search: pack asset
-	/// </summary>
+	///	search:	pack asset
+	///	</summary>
 	private static Dictionary<string, List<AssetPack>> GetAssetPackList()
 	{
-		List<AssetPack> assetList = SearchPackingAsset(assetPackList);
+		List<AssetPack> assetList = SearchPackingAsset(_assetPackList);
 		Dictionary<string, List<AssetPack>> retList = new Dictionary<string, List<AssetPack>>();
 
 		foreach (var o in assetList) {
 			if (retList.ContainsKey(o.FilePackDir)) {
-				retList [o.FilePackDir].Add(o);
+				retList[o.FilePackDir].Add(o);
 			} else {
-				retList [o.FilePackDir] = new List<AssetPack>();
-				retList [o.FilePackDir].Add(o);
+				retList[o.FilePackDir] = new List<AssetPack>();
+				retList[o.FilePackDir].Add(o);
 			}
 		}
 		return retList;
 	}
-
+	
 	private static List<AssetPack> SearchPackingAsset(string currentDir)
 	{
 		List<AssetPack> assetList = new List<AssetPack>();
-
+		
 		string findDir = GetAssetbundleRootPath() + "/" + currentDir;
-		string [] dirList = Directory.GetDirectories(findDir, "*", System.IO.SearchOption.TopDirectoryOnly);
+		string[] dirList = Directory.GetDirectories(findDir, "*", System.IO.SearchOption.TopDirectoryOnly);
 		foreach (var dirPath in dirList) {
 
 			FileInfo fileInfo = new FileInfo(dirPath);
 			string dirName = fileInfo.Name;
 			string subDirectory = currentDir + "/" + dirName;
-			if (dirName.Contains(assetPackPrefix)) {
-				AssetPack assetPack = CreatePackingAsset (subDirectory);
+
+			if (dirName.Contains(_assetPackPrefix)) {
+				AssetPack assetPack = CreatePackingAsset(subDirectory);
 				if (assetPack != null) {
-					assetList.Add (assetPack);
+					assetList.Add(assetPack);
 				}
 			} else {
 				List<AssetPack> subDirList = SearchPackingAsset(subDirectory);
-				assetList.AddRange (subDirList);
+				assetList.AddRange(subDirList);
 			}
 		}
 
@@ -392,11 +386,11 @@ public class BuildAssetbundle : MonoBehaviour
 		AssetPack assetPack = new AssetPack();
 		assetPack.FilePathList = assetFileList;
 
-		int index = currentDir.LastIndexOf ("/");
+		int index = currentDir.LastIndexOf("/");
 		assetPack.FilePackDir = index < 0 ? currentDir : currentDir.Substring(0, index);
 
-		string [] dirList = currentDir.Split ('/');
-		assetPack.ExportName = dirList[dirList.Length - 1].Replace(assetPackPrefix, "") + assetbundleExt;
+		string[] dirList = currentDir.Split('/');
+		assetPack.ExportName = dirList[dirList.Length - 1].Replace(_assetPackPrefix, "") + _assetbundleExt;
 
 		return assetPack;
 	}
@@ -405,28 +399,29 @@ public class BuildAssetbundle : MonoBehaviour
 	{
 		List<string> retList = new List<string> ();
 
-		// add: current directory files
-		string findDir = GetAssetbundleRootPath () + "/" + currentDir;
-		string [] fileList = Directory.GetFiles (findDir);
+		// add:	current	directory files
+		string findDir = GetAssetbundleRootPath() + "/" + currentDir;
+		string[] fileList = Directory.GetFiles(findDir);
 		foreach (var file in fileList) {
-			if (System.IO.Path.GetExtension (file) == ".meta")
+			if (System.IO.Path.GetExtension(file) == ".meta")
 				continue;
 			
 			FileInfo fileInfo = new FileInfo(file);
-			string filePath = Path.Combine (currentDir, fileInfo.Name);
+			string filePath = Path.Combine(currentDir, fileInfo.Name);
 			filePath = "Assets/" + filePath;
 			retList.Add(filePath);
 		}
 
-		// add: sub directory files
-		string [] dirList = Directory.GetDirectories (findDir);
+		// add:	sub	directory files
+		string[] dirList = Directory.GetDirectories(findDir);
 		foreach (var dir in dirList) {
 			FileInfo fileInfo = new FileInfo(dir);
 			string dirName = fileInfo.Name;
 			string subDirectory = currentDir + "/" + dirName;
-			List<string> retSubFileList = GetPackingFilePathList (subDirectory);
-			retList.AddRange (retSubFileList);
+			List<string> retSubFileList = GetPackingFilePathList(subDirectory);
+			retList.AddRange(retSubFileList);
 		}
+
 		return retList;
 	}
 }
