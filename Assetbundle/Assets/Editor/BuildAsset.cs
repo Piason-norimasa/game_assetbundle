@@ -69,7 +69,7 @@ public class BuildAssetbundle : MonoBehaviour
 	{
 		Dictionary<BuildType, List<AssetBundleManifest>> manifestList = new Dictionary<BuildType, List<AssetBundleManifest>>();
 		
-		for (int i = (int)BuildType.Start; i < (int)BuildType.End; i++) {
+		for (int i = (int)BuildType.Start; i <= (int)BuildType.End; i++) {
 			
 			var fileList = GetAssetList();
 			BuildAsset((BuildType)i, fileList);
