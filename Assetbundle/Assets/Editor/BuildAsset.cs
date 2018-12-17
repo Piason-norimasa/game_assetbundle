@@ -14,6 +14,8 @@ public class ResourceVersion
 	{
 		public string Path { get; set; } = "";
 		public string Hash { get; set; } = "";
+
+		public uint CRC { get; set; } = 0;
 	}
 
 	public List<FileVersion> VersionList { get; private set; } = new List<FileVersion>();
@@ -42,6 +44,7 @@ public class BuildAssetbundle : MonoBehaviour
 		public string ExportName { get; set; } = string.Empty;
 
 		public string Hash { get; set; } = string.Empty;
+		public uint CRC { get; set; } = 0;
 	}
 	
 	class AssetPack
@@ -51,6 +54,7 @@ public class BuildAssetbundle : MonoBehaviour
 		public string ExportName { get; set; } = string.Empty;
 
 		public string Hash { get; set; } = string.Empty;
+		public uint CRC { get; set; } = 0;
 	}
 
 	enum BuildType
@@ -126,6 +130,7 @@ public class BuildAssetbundle : MonoBehaviour
 			List<AssetBundleBuild> buildAssetList = new List<AssetBundleBuild>();
 			var asset = assetList[key][0];
 			string filePath = "Assets/" + asset.FileDir + "/" + asset.FileName;
+
 			AssetBundleBuild buildAsset = new AssetBundleBuild();
 			buildAsset.assetBundleName = asset.ExportName;
 			buildAsset.assetNames = new string[] { filePath };
@@ -140,14 +145,36 @@ public class BuildAssetbundle : MonoBehaviour
 			string androidOutputDir = GetOutputDir(BuildType.Android, key);
 			string windowsOutputDir = GetOutputDir(BuildType.Windows, key);
 			if (buildType == BuildType.iOS) {
+
+				string assetPath = iosOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+
 				var manifest = BuildPipeline.BuildAssetBundles(iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
 				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(assetPath, out crc);
+				Debug.Log(crc);
+				asset.CRC = crc;
 			} else if (buildType == BuildType.Android) {
+
+				string assetPath = androidOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+				
 				var manifest = BuildPipeline.BuildAssetBundles(androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
 				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(assetPath, out crc);
+				asset.CRC = crc;
 			} else if (buildType == BuildType.Windows) {
+
+				string assetPath = windowsOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+
 				var manifest = BuildPipeline.BuildAssetBundles(windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
 				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(filePath, out crc);
+				asset.CRC = crc;
 			}
 		}
 
@@ -161,7 +188,9 @@ public class BuildAssetbundle : MonoBehaviour
 			CreateOutputDirectory(buildType, key);
 
 			List<AssetBundleBuild> buildAssetList = new List<AssetBundleBuild>();
+
 			var asset = assetList[key][0];
+
 			AssetBundleBuild buildAsset = new AssetBundleBuild();
 			buildAsset.assetBundleName = asset.ExportName;
 			buildAsset.assetNames = asset.FilePathList.ToArray();
@@ -176,18 +205,39 @@ public class BuildAssetbundle : MonoBehaviour
 			string androidOutputDir = GetOutputDir(BuildType.Android, key);
 			string windowsOutputDir = GetOutputDir(BuildType.Windows, key);
 			if (buildType == BuildType.iOS) {
+
+				string assetPath = iosOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+
 				var manifest = BuildPipeline.BuildAssetBundles(iosOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.iOS);
 				var hash = manifest.GetAssetBundleHash(asset.ExportName);
 				asset.Hash = hash.ToString();
-				
+
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(assetPath, out crc);
+				asset.CRC = crc;				
 			} else if (buildType == BuildType.Android) {
+
+				string assetPath = androidOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+
 				var manifest = BuildPipeline.BuildAssetBundles(androidOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.Android);
 				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
 
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(assetPath, out crc);
+				asset.CRC = crc;				
 			} else if (buildType == BuildType.Windows) {
+
+				string assetPath = androidOutputDir + "\\" + asset.ExportName;
+				assetPath = assetPath.Replace('\\', '/');
+
 				var manifest = BuildPipeline.BuildAssetBundles(windowsOutputDir, buildAssetList.ToArray(), buildOption, BuildTarget.StandaloneWindows64);
 				asset.Hash = manifest.GetAssetBundleHash(asset.ExportName).ToString();
 
+				uint crc = 0;
+				BuildPipeline.GetCRCForAssetBundle(assetPath, out crc);
+				asset.CRC = crc;
 			}
 		}
 		
@@ -210,6 +260,7 @@ public class BuildAssetbundle : MonoBehaviour
 			ResourceVersion.FileVersion fileVersion = new ResourceVersion.FileVersion();
 			fileVersion.Path = list.Key + "/" + asset.ExportName;
 			fileVersion.Hash = asset.Hash;
+			fileVersion.CRC = asset.CRC;
 			resourceVersion.VersionList.Add(fileVersion);
 		}
 
@@ -219,6 +270,7 @@ public class BuildAssetbundle : MonoBehaviour
 			ResourceVersion.FileVersion fileVersion = new ResourceVersion.FileVersion();
 			fileVersion.Path = list.Key + "/" + asset.ExportName;
 			fileVersion.Hash = asset.Hash;
+			fileVersion.CRC = asset.CRC;
 			resourceVersion.VersionList.Add(fileVersion);
 		}
 		
