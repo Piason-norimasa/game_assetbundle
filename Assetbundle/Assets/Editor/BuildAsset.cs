@@ -17,12 +17,13 @@ public class ResourceVersion
 
 		public uint CRC { get; set; } = 0;
 	}
-
+	
 	public List<FileVersion> VersionList { get; private set; } = new List<FileVersion>();
 }
 
 public class BuildAssetbundle : MonoBehaviour
 {
+
 	private const string _outputDir              = "Output";
 	private const string _assetDir               = "Asset";
 	private const string _assetPackList          = "AssetPack";
@@ -30,7 +31,7 @@ public class BuildAssetbundle : MonoBehaviour
 	private const string _assetbundleExt         = ".unity3d";
 	private const string _assetbundleManifestExt = ".manifest";
 	private const string _versionListFileName    = "version.txt";
-
+	
 	private static BuildAssetBundleOptions buildOption =
 		BuildAssetBundleOptions.ChunkBasedCompression
 		//		| BuildAssetBundleOptions.ForceRebuildAssetBundle
@@ -46,7 +47,7 @@ public class BuildAssetbundle : MonoBehaviour
 		public string Hash { get; set; } = string.Empty;
 		public uint CRC { get; set; } = 0;
 	}
-	
+
 	class AssetPack
 	{
 		public List<string> FilePathList { get; set; } = new List<string>();
