@@ -7,7 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using AssetBundleBrowser.AssetBundleDataSource;
-using Script.Utility;
+using Tool;
 
 namespace AssetBundleBrowser
 {

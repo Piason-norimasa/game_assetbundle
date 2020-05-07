@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using AssetBundleBrowser.AssetBundleDataSource;
-using Script.Utility;
+
 
 namespace AssetBundleBrowser
 {
@@ -41,7 +41,7 @@ namespace AssetBundleBrowser
         private string GetVersionFile(AssetBundleUploaderTab.UploaderTarget target)
         {
             string filePath = GetBuildAssetFolderPath(target) + "/" + VersionFileName;
-            string file = Script.Utility.FileUtil.ReadText(filePath);
+            string file = Utility.FileUtil.ReadText(filePath);
 
             return file;
         }
@@ -115,7 +115,7 @@ namespace AssetBundleBrowser
         private List<string> GetUploadFileList(string rootPath)
         {
             List<string> fileList = new List<string>();
-            Script.Utility.FileUtil.GetAllFiles(rootPath, ref fileList, "*");
+            FileUtil.GetAllFiles(rootPath, ref fileList, "*");
             
             List<string> retList = new List<string>();
             foreach (var o in fileList) {
