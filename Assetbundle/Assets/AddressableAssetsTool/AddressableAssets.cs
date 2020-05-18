@@ -72,9 +72,9 @@ namespace AddressableAssetsTool
         ///// <summary>
         ///// デバッグ情報を表示する
         ///// </summary>
-        //public static void ShowInfo()
-        //{
-        //    Debug.Log(Addressables.RuntimePath);
-        //}
+        public static void ShowInfo()
+        {
+            Debug.Log(Addressables.RuntimePath);
+        }
     }
 }
