@@ -12,7 +12,7 @@ namespace AssetBundleBrowser
     internal class AssetBundleBuildTab
     {
         const string k_BuildPrefPrefix = "ABBBuild:";
-
+        
         private string m_streamingPath = "Assets/StreamingAssets";
 
         [SerializeField]

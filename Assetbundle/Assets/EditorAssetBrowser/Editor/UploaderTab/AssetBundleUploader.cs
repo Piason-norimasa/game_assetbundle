@@ -181,7 +181,7 @@ namespace AssetBundleBrowser
 
         private IEnumerator UploadAssetFile()
         {
-            byte [] data = Script.Utility.FileUtil.Read(_filePath);
+            byte [] data = FileUtil.Read(_filePath);
 
             FtpWebRequest request = FtpWebRequest.Create(_url) as FtpWebRequest;
             request.Credentials = new NetworkCredential(AssetBundleUploaderTab.FtpUserName, AssetBundleUploaderTab.FtpUserPassword);

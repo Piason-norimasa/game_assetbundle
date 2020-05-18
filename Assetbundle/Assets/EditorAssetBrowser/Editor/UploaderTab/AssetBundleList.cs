@@ -41,7 +41,7 @@ namespace AssetBundleBrowser
         private string GetVersionFile(AssetBundleUploaderTab.UploaderTarget target)
         {
             string filePath = GetBuildAssetFolderPath(target) + "/" + VersionFileName;
-            string file = Utility.FileUtil.ReadText(filePath);
+            string file = FileUtil.ReadText(filePath);
 
             return file;
         }
@@ -183,12 +183,12 @@ namespace AssetBundleBrowser
  
             // save version file
             string rootDir = GetBuildAssetFolderPath(targetPlatform);
-            if (!Script.Utility.FileUtil.IsExistDirectory(rootDir)) {
-                Script.Utility.FileUtil.CreateDirectory(rootDir);
+            if (!FileUtil.IsExistDirectory(rootDir)) {
+                FileUtil.CreateDirectory(rootDir);
             }
-
+            
             string savePath = rootDir + "/" + VersionFileName;
-            Script.Utility.FileUtil.WriteText(versionFile, savePath);
+            FileUtil.WriteText(versionFile, savePath);
 
             return versionFile;
         }
