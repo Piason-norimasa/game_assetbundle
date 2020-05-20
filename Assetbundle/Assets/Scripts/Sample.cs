@@ -1,11 +1,14 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.ResourceManagement.AsyncOperations;
+
 using AddressableAssetsTool;
 using UnityEngine.AddressableAssets;
 
+
 public class Sample : MonoBehaviour
 {
+
     // Start is called before the first frame update
     void Start()
     {
@@ -13,20 +16,20 @@ public class Sample : MonoBehaviour
 
         AddressableAssets.GetSizeAsync().Completed += (size) =>
         {
-            if (size.Result > 0)
-            {
+            if (size.Result > 0) {
+
                 var handle = AddressableAssets.DownloadDependenciesAsync();
                 StartCoroutine(DownloadWait(handle));
-                handle.Completed += (res) =>
-                {
+                handle.Completed += (res) => {
+
                     Load();
                     Addressables.Release(res);
                 };
-            }
-            else
-            {
+            } else {
+
                 Load();
             }
+
             Addressables.Release(size);
         };
     }
@@ -49,8 +52,8 @@ public class Sample : MonoBehaviour
     void Load()
     {
         var resource = AddressableAssets.LoadAssetAsync<GameObject>("Assets/AddressableAssets/Chara.prefab");
-        resource.Completed += (res) =>
-        {
+        resource.Completed += (res) => {
+
             Instantiate(res.Result, this.transform);
         };
     }
