@@ -9,6 +9,8 @@ Jenkinsなどと連動させて使用
  
  Unity2019.3.3.9f1
 
-# Usage
+# How to use
 
-Unity.exe BathchBuild 関数をバッチモードで実行する想定
+- Scenes/SampleAAS を起動する。
+　Addressable assetbundleをロードし表示する為にの簡易テスト
+- Unity.exe BathchBuild 関数をバッチモードで実行する想定
