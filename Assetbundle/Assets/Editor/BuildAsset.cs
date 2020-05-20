@@ -8,6 +8,7 @@ using YamlDotNet.RepresentationModel;
 using YamlDotNet.Samples.Helpers;
 using YamlDotNet.Serialization;
 
+
 public class ResourceVersion
 {
 	public class FileVersion
